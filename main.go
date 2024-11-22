@@ -1,6 +1,7 @@
 package main
 
 import (
+	bgrem "DirtyTaskDoneDirtFast/Background_Remover"
 	"context"
 	"os"
 	"os/signal"
@@ -29,6 +30,8 @@ func main() {
 	bot.Start(ctx)
 }
 func thisfunctiondoesSomething(ctx context.Context, b *bot.Bot, update *models.Update) {
+	bgrem.RemoveBackground("example_image.png")
+
 	b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: update.Message.Chat.ID,
 		Text:   "I'M RACIST",

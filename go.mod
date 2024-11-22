@@ -1,4 +1,4 @@
-module github.com/LynixDancho
+module DirtyTaskDoneDirtFast
 
 go 1.23.3
 
