@@ -42,11 +42,18 @@ func matchfunc(update *models.Update) bool {
 
 }
 func dynamichandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+
 	if update.Message.Photo != nil {
 		photo := update.Message.Photo[len(update.Message.Photo)-1]
 		bgrem.ThisfunctiondoesSomething(&photo, ctx, b, update)
 
 	}
+	if update.Message.Document != nil && (update.Message.Document.MimeType == "image/jpeg" || update.Message.Document.MimeType == "image/png") {
+		photo := update.Message.Document
+		bgrem.ThisfunctiondoesSomething(&photo, ctx, b, update)
+
+	}
+
 	if update.Message != nil && update.Message.Text != "" {
 		if handler, exists := commandHandlers[update.Message.Text]; exists {
 			handler(ctx, b, update) // Call the appropriate handler
