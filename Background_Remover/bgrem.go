@@ -14,7 +14,7 @@ import (
 	"github.com/go-telegram/bot/models"
 )
 
-func thisfunctiondoesSomething(photo *models.PhotoSize, ctx context.Context, b *bot.Bot, update *models.Update) {
+func ThisfunctiondoesSomething(photo *models.PhotoSize, ctx context.Context, b *bot.Bot, update *models.Update) {
 	file, err := b.GetFile(ctx, &bot.GetFileParams{
 		FileID: photo.FileID,
 	})
