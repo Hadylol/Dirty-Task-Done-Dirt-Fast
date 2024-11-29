@@ -142,8 +142,7 @@ func ThisfunctiondoesSomething(photo interface{}, ctx context.Context, b *bot.Bo
 			return
 		}
 
-		// Send the photo
-		message, err := b.SendDocument(ctx, &bot.SendDocumentParams{
+		b.SendDocument(ctx, &bot.SendDocumentParams{
 			ChatID:   update.Message.Chat.ID,
 			Document: &models.InputFileUpload{Filename: result, Data: bytes.NewReader(fileContent)},
 		})
@@ -153,7 +152,7 @@ func ThisfunctiondoesSomething(photo interface{}, ctx context.Context, b *bot.Bo
 		}
 		os.Remove(localfile)
 		os.Remove(result)
-		fmt.Println("Photo sent successfully:", message)
+
 	default:
 		fmt.Print(f)
 	}
