@@ -73,17 +73,13 @@ func ThisfunctiondoesSomething(photo interface{}, ctx context.Context, b *bot.Bo
 		}
 
 		// Send the photo
-		message, err := b.SendDocument(ctx, &bot.SendDocumentParams{
+		b.SendDocument(ctx, &bot.SendDocumentParams{
 			ChatID:   update.Message.Chat.ID,
 			Document: &models.InputFileUpload{Filename: result, Data: bytes.NewReader(fileContent)},
 		})
-		if err != nil {
-			fmt.Println("Error sending photo:", err)
-			return
-		}
+
 		os.Remove(localfile)
 		os.Remove(result)
-		fmt.Println("Photo sent successfully:", message)
 
 	case **models.Document:
 		fmt.Print("  rani f document")

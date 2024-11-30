@@ -2,11 +2,13 @@ package main
 
 import (
 	bgrem "DirtyTaskDoneDirtFast/Background_Remover"
+	TransactionCalling "DirtyTaskDoneDirtFast/Solana_Stuff"
 	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"os/signal"
+	"strconv"
 	"strings"
 
 	"github.com/go-telegram/bot"
@@ -21,10 +23,18 @@ var commandHandlers = map[string]func(ctx context.Context, b *bot.Bot, update *m
 	"Toyo":         Toyo,
 	"nikmok":       Wswoata3mok,
 	"createWallet": WalletCreation,
+	"/Transaction": Transaction,
 
 	"/ImageBg": Images,
 }
+
+type ForTransaction struct {
+	PrivateKey string
+	SenderKey  string
+}
+
 var userState = make(map[int64]string)
+var userInfo = make(map[int64]ForTransaction)
 
 func UpdateUserState(id int64, state string) {
 
@@ -71,11 +81,22 @@ func Wswoata3mok(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 }
 func dynamichandler(ctx context.Context, b *bot.Bot, update *models.Update) {
-	userId := update.Message.Chat.ID
+	userId := update.Message.From.ID
 
-	_, exists := userState[userId]
+	state, exists := userState[userId]
 	if exists {
-		Images(ctx, b, update)
+		switch state {
+		case "waiting_for_Images":
+			Images(ctx, b, update)
+
+		case "Transaction":
+			Transaction(ctx, b, update)
+		case "SenderKey":
+			Transaction(ctx, b, update)
+		case "Sol":
+			Transaction(ctx, b, update)
+		}
+
 	}
 
 	if update.Message != nil && update.Message.Text != "" {
@@ -90,13 +111,64 @@ func defaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	fmt.Print("buying poor socks i'll create jobs tearing down ur mom ")
 
 }
+func Transaction(ctx context.Context, b *bot.Bot, update *models.Update) {
+	var forTransaction ForTransaction
+	userId := update.Message.From.ID
+	state, exists := userState[userId]
+	if !exists {
+		userState[userId] = "Transaction"
+		b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: update.Message.Chat.ID,
+			Text:   "Please Provide Private key ",
+		})
+		return
+	}
+	switch state {
+	case "Transaction":
+		forTransaction.PrivateKey = update.Message.Text
+		userState[userId] = "SenderKey"
+		userInfo[userId] = forTransaction
+		b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: update.Message.Chat.ID,
+			Text:   "Please Provide Sender key ",
+		})
+	case "SenderKey":
+		forTransaction = userInfo[userId]
+		forTransaction.SenderKey = update.Message.Text
+		userState[userId] = "Sol"
+		userInfo[userId] = forTransaction
+		b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: update.Message.Chat.ID,
+			Text:   "Please Provide How much solana you want to send ",
+		})
+	case "Sol":
+		floatval, err := strconv.ParseFloat(update.Message.Text, 32)
+		if err != nil {
+			fmt.Print("\n", err)
+			b.SendMessage(ctx, &bot.SendMessageParams{
+				ChatID: update.Message.Chat.ID,
+				Text:   "Please put a number man  ",
+			})
+			return
+		}
+		TransactioInformation := userInfo[userId]
+		PrivateKey := TransactioInformation.PrivateKey
+		fmt.Print("\n This is The Private kEy in the Main.go ", PrivateKey, "\n")
+		SenderKey := TransactioInformation.SenderKey
+		fmt.Print("\n This is The Sender kEy in the Main.go ", SenderKey, "\n")
+
+		TransactionCalling.CallingTransaction(ctx, b, update, PrivateKey, SenderKey, float32(floatval))
+		delete(userInfo, userId)
+
+	}
+}
 func Images(ctx context.Context, b *bot.Bot, update *models.Update) {
-	userId := update.Message.Chat.ID
+	userId := update.Message.From.ID
 	state, exists := userState[userId]
 	if !exists {
 		userState[userId] = "waiting_for_Images"
 		b.SendMessage(ctx, &bot.SendMessageParams{
-			ChatID: userId,
+			ChatID: update.Message.Chat.ID,
 			Text:   "Please Provide the Image",
 		})
 
@@ -104,7 +176,7 @@ func Images(ctx context.Context, b *bot.Bot, update *models.Update) {
 	}
 	switch state {
 	case "waiting_for_Images":
-		fmt.Print("hi")
+		fmt.Print(update.Message.From.ID, "\n")
 		if update.Message.Photo != nil {
 			photo := update.Message.Photo[len(update.Message.Photo)-1]
 			go bgrem.ThisfunctiondoesSomething(&photo, ctx, b, update)
