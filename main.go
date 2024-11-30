@@ -22,7 +22,14 @@ var commandHandlers = map[string]func(ctx context.Context, b *bot.Bot, update *m
 	"nikmok":       Wswoata3mok,
 	"createWallet": WalletCreation,
 
-	"/sayHi": Sayhiman,
+	"/ImageBg": Images,
+}
+var userState = make(map[int64]string)
+
+func UpdateUserState(id int64, state string) {
+
+	userState[id] = state
+
 }
 
 func main() {
@@ -39,7 +46,6 @@ func main() {
 	b.RegisterHandlerMatchFunc(matchfunc, dynamichandler)
 	b.Start(ctx)
 }
-
 func matchfunc(update *models.Update) bool {
 	if update.Message == nil {
 		return false
@@ -65,16 +71,11 @@ func Wswoata3mok(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 }
 func dynamichandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	userId := update.Message.Chat.ID
 
-	if update.Message.Photo != nil {
-		photo := update.Message.Photo[len(update.Message.Photo)-1]
-		go bgrem.ThisfunctiondoesSomething(&photo, ctx, b, update)
-
-	}
-	if update.Message.Document != nil && (update.Message.Document.MimeType == "image/jpeg" || update.Message.Document.MimeType == "image/png") {
-		photo := update.Message.Document
-		go bgrem.ThisfunctiondoesSomething(&photo, ctx, b, update)
-
+	_, exists := userState[userId]
+	if exists {
+		Images(ctx, b, update)
 	}
 
 	if update.Message != nil && update.Message.Text != "" {
@@ -89,8 +90,34 @@ func defaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	fmt.Print("buying poor socks i'll create jobs tearing down ur mom ")
 
 }
-func Sayhiman(ctx context.Context, b *bot.Bot, update *models.Update) {
+func Images(ctx context.Context, b *bot.Bot, update *models.Update) {
+	userId := update.Message.Chat.ID
+	state, exists := userState[userId]
+	if !exists {
+		userState[userId] = "waiting_for_Images"
+		b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: userId,
+			Text:   "Please Provide the Image",
+		})
 
+		return
+	}
+	switch state {
+	case "waiting_for_Images":
+		fmt.Print("hi")
+		if update.Message.Photo != nil {
+			photo := update.Message.Photo[len(update.Message.Photo)-1]
+			go bgrem.ThisfunctiondoesSomething(&photo, ctx, b, update)
+
+		}
+		if update.Message.Document != nil && (update.Message.Document.MimeType == "image/jpeg" || update.Message.Document.MimeType == "image/png") {
+			photo := update.Message.Document
+			go bgrem.ThisfunctiondoesSomething(&photo, ctx, b, update)
+
+		}
+		delete(userState, userId)
+
+	}
 }
 func handleHelp(ctx context.Context, b *bot.Bot, update *models.Update) {
 

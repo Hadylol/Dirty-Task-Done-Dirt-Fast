@@ -7,7 +7,6 @@ import (
 	"github.com/go-telegram/bot/models"
 )
 
-func CallingTransaction(ctx context.Context, b *bot.Bot, update *models.Update) {
-	VariableGetter := update.Message.Text
+func CallingTransaction(ctx context.Context, b *bot.Bot, update *models.Update, prviate string, SenderPublicKey string, sol float32) {
 
 }
