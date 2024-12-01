@@ -1,0 +1,7 @@
+import "strconv"
+
+func main() {
+	myFloat := 42.42
+	myString := strconv.FormatFloat(myFloat, 'f', 2, 64) // 'f' is for decimal format
+	fmt.Println("Converted float to string:", myString)
+}

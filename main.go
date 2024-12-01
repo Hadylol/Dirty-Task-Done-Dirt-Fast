@@ -2,7 +2,6 @@ package main
 
 import (
 	bgrem "DirtyTaskDoneDirtFast/Background_Remover"
-	TransactionCalling "DirtyTaskDoneDirtFast/Solana_Stuff"
 	"context"
 	"fmt"
 	"os"
@@ -14,6 +13,7 @@ import (
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 	"github.com/joho/godotenv"
+	"github.com/mr-tron/base58"
 )
 
 // Define a map of commands to handler functions
@@ -121,10 +121,32 @@ func Transaction(ctx context.Context, b *bot.Bot, update *models.Update) {
 			ChatID: update.Message.Chat.ID,
 			Text:   "Please Provide Private key ",
 		})
+
 		return
 	}
 	switch state {
 	case "Transaction":
+		ValidationPublicKey, err := base58.Decode(update.Message.Text)
+		if err != nil {
+			b.SendMessage(ctx, &bot.SendMessageParams{
+				ChatID: update.Message.Chat.ID,
+				Text:   "error Happend make sure u typed correctly  ",
+			})
+			delete(userState, userId)
+			delete(userInfo, userId)
+			return
+		}
+		if len(ValidationPublicKey) != 64 {
+
+			b.SendMessage(ctx, &bot.SendMessageParams{
+				ChatID: update.Message.Chat.ID,
+				Text:   "PUT A VALID KEY NEXT TIME   ",
+			})
+			delete(userState, userId)
+			delete(userInfo, userId)
+
+			return
+		}
 		forTransaction.PrivateKey = update.Message.Text
 		userState[userId] = "SenderKey"
 		userInfo[userId] = forTransaction
@@ -134,6 +156,25 @@ func Transaction(ctx context.Context, b *bot.Bot, update *models.Update) {
 		})
 	case "SenderKey":
 		forTransaction = userInfo[userId]
+		ValidationPublicKey, err := base58.Decode(update.Message.Text)
+		if err != nil {
+			b.SendMessage(ctx, &bot.SendMessageParams{
+				ChatID: update.Message.Chat.ID,
+				Text:   "error Happend make sure u typed correctly  ",
+			})
+			return
+		}
+		if len(ValidationPublicKey) != 32 {
+
+			b.SendMessage(ctx, &bot.SendMessageParams{
+				ChatID: update.Message.Chat.ID,
+				Text:   "PUT A VALID KEY NEXT TIME   ",
+			})
+			delete(userState, userId)
+			delete(userInfo, userId)
+
+			return
+		}
 		forTransaction.SenderKey = update.Message.Text
 		userState[userId] = "Sol"
 		userInfo[userId] = forTransaction
@@ -149,6 +190,7 @@ func Transaction(ctx context.Context, b *bot.Bot, update *models.Update) {
 				ChatID: update.Message.Chat.ID,
 				Text:   "Please put a number man  ",
 			})
+			delete(userState, userId)
 			return
 		}
 		TransactioInformation := userInfo[userId]
@@ -157,7 +199,28 @@ func Transaction(ctx context.Context, b *bot.Bot, update *models.Update) {
 		SenderKey := TransactioInformation.SenderKey
 		fmt.Print("\n This is The Sender kEy in the Main.go ", SenderKey, "\n")
 
-		TransactionCalling.CallingTransaction(ctx, b, update, PrivateKey, SenderKey, float32(floatval))
+		// TransactionCalling.CallingTransaction(ctx, b, update, PrivateKey, SenderKey, float32(floatval))
+		Sol := strconv.FormatFloat(float64(floatval), 'f', 2, 32)
+
+		cmd := exec.Command("node", "./Solana_Stuff/Transaction.js", PrivateKey, SenderKey, Sol)
+		result, err := cmd.Output()
+		if err != nil {
+			fmt.Print("sra error f execCommand ", err)
+
+		}
+		signatureBase58 := string(result)
+
+		fmt.Print("The result of the transaction is ", signatureBase58)
+		b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: update.Message.Chat.ID,
+			Text:   "heres ur signature ",
+		})
+		b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: update.Message.Chat.ID,
+			Text:   signatureBase58,
+		})
+		delete(userState, userId)
+
 		delete(userInfo, userId)
 
 	}

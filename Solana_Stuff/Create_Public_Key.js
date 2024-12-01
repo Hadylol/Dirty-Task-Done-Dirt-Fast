@@ -4,6 +4,6 @@ function main(value) {
   let walletTypeShit = Keypair.generate();
 
   console.log("Public Key " + walletTypeShit.publicKey.toBase58());
-  console.log("Secret Key : " + bs58.encode(walletTypeShit.secretKey));
+  console.log("Secret Key : " + bs58.default.encode(walletTypeShit.secretKey));
 }
 main();

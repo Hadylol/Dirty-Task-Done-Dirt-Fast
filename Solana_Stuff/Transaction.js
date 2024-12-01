@@ -11,7 +11,7 @@ const bs58 = require("bs58");
 
 // main(PublickKey, PrivateKey, SenderKey, sol)
 async function main(PrivateKey, SenderKey, sol) {
-  const PrivateKeyBytes = bs58.decode(PrivateKey);
+  const PrivateKeyBytes = bs58.default.decode(PrivateKey);
   if (PrivateKeyBytes.length !== 64) {
     throw new Error("Invalid Private Key: Must be 64 bytes long.");
   }
@@ -39,4 +39,4 @@ if (args.length < 3) {
   process.exit(1);
 }
 const [PrivateKey, SenderKey, sol] = args;
-main(PrivateKey.trim(), SenderKey.trim(), parseFloat(sol));
+main(PrivateKey, SenderKey, parseFloat(sol));
