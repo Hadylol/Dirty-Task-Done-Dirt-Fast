@@ -17,7 +17,8 @@ func InitDB() *supabase.Client {
 	supabaseKey := os.Getenv("DB_KEY")
 	client, err := supabase.NewClient(supabaseURL, supabaseKey, &supabase.ClientOptions{})
 	if err != nil {
-		log.Println("Something went Wrong init client : ", err)
+		log.Fatal("Error while init the client : ", err)
+
 	}
 	return client
 }

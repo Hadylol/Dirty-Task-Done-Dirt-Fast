@@ -14,12 +14,15 @@ import (
 	"github.com/joho/godotenv"
 )
 
+var currentOptions = []bool{false, false, false}
+
 func main() {
+
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 	opts := []bot.Option{
-		bot.WithDefaultHandler(defaultHandler),
-		bot.WithCallbackQueryDataHandler("button", bot.MatchTypePrefix, callbackHandler),
+		bot.WithMessageTextHandler("/select", bot.MatchTypeExact, defaultHandler),
+		bot.WithCallbackQueryDataHandler("btn_", bot.MatchTypePrefix, callbackHandler),
 	}
 	err := godotenv.Load()
 	if err != nil {
@@ -34,19 +37,38 @@ func main() {
 
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/help", bot.MatchTypeExact, helpHandler)
 	//	b.RegisterHandler(bot.HandlerTypeMessageText, "/help@bosukeTest_bot", bot.MatchTypeExact, helpHandler)
-
+	go shorturl.Shorturl()
 	b.Start(ctx)
+
 }
 func callbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
 		CallbackQueryID: update.CallbackQuery.ID,
 		ShowAlert:       false,
 	})
-	b.SendMessage(ctx, &bot.SendMessageParams{
-		ChatID: update.CallbackQuery.Message.Message.Chat.ID,
-		Text:   "You selected the button: " + update.CallbackQuery.Data,
+	switch update.CallbackQuery.Data {
+	case "btn_opt1":
+		currentOptions[0] = !currentOptions[0]
+	case "btn_opt2":
+		currentOptions[1] = !currentOptions[1]
+	case "btn_opt3":
+		currentOptions[2] = !currentOptions[2]
+	case "btn_select":
+		b.DeleteMessage(ctx, &bot.DeleteMessageParams{
+			ChatID:    update.CallbackQuery.Message.Message.Chat.ID,
+			MessageID: update.CallbackQuery.Message.Message.ID,
+		})
+		b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: update.CallbackQuery.Message.Message.Chat.ID,
+			Text:   fmt.Sprintf("Selected options : %v", currentOptions),
+		})
+		return
+	}
+	b.EditMessageReplyMarkup(ctx, &bot.EditMessageReplyMarkupParams{
+		ChatID:      update.CallbackQuery.Message.Message.Chat.ID,
+		MessageID:   update.CallbackQuery.Message.Message.ID,
+		ReplyMarkup: buildKeyboard(),
 	})
-
 }
 func URLHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 
@@ -67,34 +89,48 @@ func URLHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		log.Println("the shorten URL is ", shortenURL)
 		b.SendMessage(ctx, &bot.SendMessageParams{
 			ChatID: update.Message.Chat.ID,
-			Text:   "this is your shorten URL : " + shortenURL,
+			Text:   "this is your shorten URL : http://localhost:4000/" + shortenURL,
 		})
 	}
 
 }
 
-func defaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+func buildKeyboard() models.ReplyMarkup {
 	kb := &models.InlineKeyboardMarkup{
 		InlineKeyboard: [][]models.InlineKeyboardButton{
 			{
-				{Text: "Button 1", CallbackData: "button_1"},
-				{Text: "Button 2", CallbackData: "button_2"},
+				{Text: buttonText("Opt 1", currentOptions[0]), CallbackData: "btn_opt1"},
+				{Text: buttonText("Opt 2", currentOptions[1]), CallbackData: "btn_opt2"},
+				{Text: buttonText("Opt 3", currentOptions[2]), CallbackData: "btn_opt3"},
 			},
 			{
 
-				{Text: "Button 3", CallbackData: "button_3"},
+				{Text: "Select", CallbackData: "btn_select"},
 			},
 		},
 	}
-	b.SendMessage(ctx, &bot.SendMessageParams{
-		ChatID:      update.Message.Chat.ID,
-		Text:        " /help for all commands 😃👍",
-		ReplyMarkup: kb,
-	})
+	return kb
+}
+func buttonText(text string, opt bool) string {
+	if opt {
+		return "✅ " + text
+	}
+	return "❌ " + text
 }
 func helpHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: update.Message.Chat.ID,
 		Text:   "1 - /ShortURL for shorten URL Service 😡 \n 2- /FileConverter for Converting Files Service 🤬",
+		ReplyMarkup: &models.ForceReply{
+			ForceReply: true,
+		},
+	})
+}
+func defaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+
+	b.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID:      update.Message.Chat.ID,
+		Text:        " Select multiple optins for your command ",
+		ReplyMarkup: buildKeyboard(),
 	})
 }
