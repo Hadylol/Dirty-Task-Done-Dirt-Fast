@@ -36,14 +36,14 @@ func ThisfunctiondoesSomething(photo interface{}, ctx context.Context, b *bot.Bo
 			FileUniqueID: file.FileUniqueID,
 			FilePath:     file.FilePath,
 		})
-		localfile := fmt.Sprintf("urshit%v.png", file.FileUniqueID)
+		localfile := fmt.Sprintf("../urshit%v.png", file.FileUniqueID)
 		if err := downloadimage(fileUrl, localfile); err != nil {
 			b.SendMessage(ctx, &bot.SendMessageParams{ChatID: update.Message.Chat.ID, Text: "makhdmtsh si zabi ma telecharjash 3adna ADSI"})
 
 			return
 
 		}
-		cmd := exec.Command("python", "backgroundRemover.py", localfile, file.FileUniqueID)
+		cmd := exec.Command("python", "./Background_Remover/backgroundRemover.py", localfile, file.FileUniqueID)
 		output, err := cmd.Output()
 		if err != nil {
 			fmt.Println("Python script error:", err)
@@ -109,7 +109,7 @@ func ThisfunctiondoesSomething(photo interface{}, ctx context.Context, b *bot.Bo
 		}
 		fmt.Print("Downloaded  the file")
 
-		cmd := exec.Command("python", "backgroundRemover.py", localfile, file.FileUniqueID)
+		cmd := exec.Command("python", "./Background_Remover/backgroundRemover.py", localfile, file.FileUniqueID)
 		output, err := cmd.Output()
 		if err != nil {
 			fmt.Println("Python script error:", err)

@@ -4,6 +4,7 @@ import (
 	bgrem "DirtyTaskDoneDirtFast/Background_Remover"
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -18,14 +19,14 @@ import (
 
 // Define a map of commands to handler functions
 var commandHandlers = map[string]func(ctx context.Context, b *bot.Bot, update *models.Update){
-	"help":         handleHelp,
-	"we":           handleSayHi,
-	"Toyo":         Toyo,
-	"nikmok":       Wswoata3mok,
-	"createWallet": WalletCreation,
-	"/Transaction": Transaction,
-
-	"/ImageBg": Images,
+	"help":                     handleHelp,
+	"we":                       handleSayHi,
+	"nikmok":                   Wswoata3mok,
+	"createwallet":             WalletCreation,
+	"/transaction":             Transaction,
+	"/checkbalance":            CheckBalance,
+	"/imagebg":                 Images,
+	"if you don't talk to her": talktuah,
 }
 
 type ForTransaction struct {
@@ -35,12 +36,6 @@ type ForTransaction struct {
 
 var userState = make(map[int64]string)
 var userInfo = make(map[int64]ForTransaction)
-
-func UpdateUserState(id int64, state string) {
-
-	userState[id] = state
-
-}
 
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
@@ -64,11 +59,11 @@ func matchfunc(update *models.Update) bool {
 	return update.Message.Text != "" || len(update.Message.Photo) > 0 || update.Message.Document != nil
 
 }
-func Toyo(ctx context.Context, b *bot.Bot, update *models.Update) {
+func talktuah(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 	b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: update.Message.Chat.ID,
-		Text:   "saheb li khdemni w na9sh",
+		Text:   "  talk tuah    ",
 	})
 
 }
@@ -76,7 +71,7 @@ func Wswoata3mok(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 	b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: update.Message.Chat.ID,
-		Text:   "sowa Ta3 MOK",
+		Text:   " ww MA 3LAH     ",
 	})
 
 }
@@ -95,6 +90,8 @@ func dynamichandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 			Transaction(ctx, b, update)
 		case "Sol":
 			Transaction(ctx, b, update)
+		case "CheckingBalance":
+			CheckBalance(ctx, b, update)
 		}
 
 	}
@@ -109,6 +106,26 @@ func dynamichandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 }
 func defaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	fmt.Print("buying poor socks i'll create jobs tearing down ur mom ")
+
+}
+func CheckBalance(ctx context.Context, b *bot.Bot, update *models.Update) {
+	userId := update.Message.From.ID
+	_, exists := userState[userId]
+
+	if !exists {
+		b.SendMessage(ctx, &bot.SendMessageParams{ChatID: update.Message.Chat.ID, Text: "PUT THE DAMMN PUBLIC KEY "})
+		userState[userId] = "CheckingBalance"
+		return
+	}
+	cmd := exec.Command("node", "./Solana_Stuff/Create_Public_Key.js", update.Message.Text)
+	response, err := cmd.Output()
+	if err != nil {
+		log.Printf("error happend while checking the balance of a wallet %v ", err)
+		delete(userState, userId)
+		return
+	}
+	b.SendMessage(ctx, &bot.SendMessageParams{ChatID: update.Message.Chat.ID, Text: string(response)})
+	delete(userState, userId)
 
 }
 func Transaction(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -277,7 +294,7 @@ func WalletCreation(ctx context.Context, b *bot.Bot, update *models.Update) {
 	data := string(output)
 	parts := strings.Split(data, "\n")
 	if len(parts) < 2 {
-		fmt.Println("Error: Could not separate keys")
+		log.Print("Error: Could not separate keys")
 		return
 	}
 	publicKey := strings.TrimSpace(parts[0])
