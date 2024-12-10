@@ -6,8 +6,9 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"strings"
 	"telegram-bot/shorturl"
+
+	FSM "telegram-bot/userState"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
@@ -34,13 +35,15 @@ func main() {
 	}
 
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/ShortURL", bot.MatchTypeContains, URLHandler)
-
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/help", bot.MatchTypeExact, helpHandler)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "", bot.MatchTypeContains, dynamicHandler)
+
 	//	b.RegisterHandler(bot.HandlerTypeMessageText, "/help@bosukeTest_bot", bot.MatchTypeExact, helpHandler)
 	go shorturl.Shorturl()
 	b.Start(ctx)
 
 }
+
 func callbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
 		CallbackQueryID: update.CallbackQuery.ID,
@@ -70,29 +73,41 @@ func callbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		ReplyMarkup: buildKeyboard(),
 	})
 }
-func URLHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 
-	fakeURL := update.Message.Text
-	fmt.Println(fakeURL)
-	URL := strings.Fields(fakeURL)[1]
-	log.Println("this is the URl provided", URL)
-	if URL == "" {
+func URLHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	userID := update.Message.From.ID
+	userState := FSM.GetUserFSM(userID)
+	if userState.StateMachine.Is("idle") {
+		userState.StateMachine.Event(ctx, "start")
 		b.SendMessage(ctx, &bot.SendMessageParams{
 			ChatID: update.Message.Chat.ID,
-			Text:   "please Provide a URL !",
+			Text:   "Please provide a URL nigga",
 		})
 	} else {
-		shortenURL, err := shorturl.ShortenURLHandler(URL)
-		if err != nil {
-			log.Println("failed to insert the data", err)
-		}
-		log.Println("the shorten URL is ", shortenURL)
 		b.SendMessage(ctx, &bot.SendMessageParams{
 			ChatID: update.Message.Chat.ID,
-			Text:   "this is your shorten URL : http://localhost:4000/" + shortenURL,
+			Text:   "We are already in the process of doing that shi ",
 		})
 	}
+}
 
+func dynamicHandler(ctx context.Context, b *bot.Bot, update *models.Update){
+	userID := update.Message.From.ID
+	userState := FSM.GetUserFSM(userID)
+	if userState.StateMachine.Is("waiting_for_url") {
+		url := update.Message.Text
+		ShortenURL, err := shorturl.ShortenURLHandler(url)
+		if err != nil {
+			log.Println("error on the telegram side URL")
+			return
+		}
+		userState.StateMachine.Event(ctx, "receive_url")
+		b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: update.Message.Chat.ID,
+			Text:   "this is your shorten URL : http://localhost:4000/" + ShortenURL,
+		})
+	}
+	userState.StateMachine.Event(ctx, "rest")
 }
 
 func buildKeyboard() models.ReplyMarkup {
@@ -118,12 +133,10 @@ func buttonText(text string, opt bool) string {
 	return "❌ " + text
 }
 func helpHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+
 	b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: update.Message.Chat.ID,
 		Text:   "1 - /ShortURL for shorten URL Service 😡 \n 2- /FileConverter for Converting Files Service 🤬",
-		ReplyMarkup: &models.ForceReply{
-			ForceReply: true,
-		},
 	})
 }
 func defaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
