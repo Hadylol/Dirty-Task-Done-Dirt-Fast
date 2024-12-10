@@ -102,7 +102,7 @@ func Wswoata3mok(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 	b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: update.Message.Chat.ID,
-		Text:   " ww MA 3LAH     ",
+		Text:   " MA GHADI NIKLK SOWA TA3 MOK A WELD 9A7BA    ",
 	})
 
 }

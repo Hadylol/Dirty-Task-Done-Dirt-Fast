@@ -18,29 +18,9 @@ import (
 	"github.com/go-telegram/ui/keyboard/inline"
 )
 
-// ValidType checks if the file type is supported
-func ValidType(filetype string) bool {
-	validTypes := map[string]bool{
-		"GIF":  true,
-		"JPEG": true,
-		"PNG":  true,
-		"BMP":  true,
-		"TIFF": true,
-		"DOC":  true,
-		"DOCX": true,
-		"RTF":  true,
-		"ODT":  true,
-		"PDF":  true,
-	}
-	return validTypes[filetype]
-}
-
-const sizeLimit = 5 * 1024 * 1024 //2MB
+const sizeLimit = 5 * 1024 * 1024 //5MB
 type ConversionHandler func(file *os.File, fileSize int64, buffer *bytes.Buffer, b *bot.Bot, ctx context.Context, update *models.Update)
 
-// ConvertingFiles handles the file conversion based on type
-
-// I need to Check if the Image is Ending with Png or Jpeg I just need to check the shit you know
 func ConvertingFiles(file interface{}, b *bot.Bot, ctx context.Context, update *models.Update, MimeType string) {
 
 	var fileID string
@@ -57,35 +37,31 @@ func ConvertingFiles(file interface{}, b *bot.Bot, ctx context.Context, update *
 	}
 	kb := inline.New(b).
 		Row().
-		Button("GIF", []byte(fmt.Sprintf("%s | gif", fileID)), func(ctx context.Context, bot *bot.Bot, mes models.MaybeInaccessibleMessage, data []byte) {
+		Button("JPEG", []byte(fmt.Sprintf("%s | jpeg", fileID)), func(ctx context.Context, bot *bot.Bot, mes models.MaybeInaccessibleMessage, data []byte) {
 			processFile(b, ctx, update, data, MimeType)
 		}).
-		Button("JPEG", []byte(fmt.Sprintf("%s | jpeg", fileID)), func(ctx context.Context, bot *bot.Bot, mes models.MaybeInaccessibleMessage, data []byte) {
+		Button("PDF", []byte(fmt.Sprintf("%s | pdf", fileID)), func(ctx context.Context, bot *bot.Bot, mes models.MaybeInaccessibleMessage, data []byte) {
 			processFile(b, ctx, update, data, MimeType)
 		}).
 		Row().
 		Button("BMP", []byte(fmt.Sprintf("%s | bmp", fileID)), func(ctx context.Context, bot *bot.Bot, mes models.MaybeInaccessibleMessage, data []byte) {
 			processFile(b, ctx, update, data, MimeType)
 		}).
-		Button("TIFF", []byte("tiff"), func(ctx context.Context, bot *bot.Bot, mes models.MaybeInaccessibleMessage, data []byte) {
+		Button("TIFF", []byte(fmt.Sprintf("%s | tiff", fileID)), func(ctx context.Context, bot *bot.Bot, mes models.MaybeInaccessibleMessage, data []byte) {
 			processFile(b, ctx, update, data, MimeType)
 		}).
 		Row().
-		Button("DOC", []byte("doc"), func(ctx context.Context, bot *bot.Bot, mes models.MaybeInaccessibleMessage, data []byte) {
+		Button("DOC", []byte(fmt.Sprintf("%s | doc", fileID)), func(ctx context.Context, bot *bot.Bot, mes models.MaybeInaccessibleMessage, data []byte) {
 			processFile(b, ctx, update, data, MimeType)
 		}).
-		Button("DOCX", []byte("docx"), func(ctx context.Context, bot *bot.Bot, mes models.MaybeInaccessibleMessage, data []byte) {
-			processFile(b, ctx, update, data, MimeType)
-		}).
-		Row().
-		Button("RTF", []byte("rtf"), func(ctx context.Context, bot *bot.Bot, mes models.MaybeInaccessibleMessage, data []byte) {
-			processFile(b, ctx, update, data, MimeType)
-		}).
-		Button("ODT", []byte("odt"), func(ctx context.Context, bot *bot.Bot, mes models.MaybeInaccessibleMessage, data []byte) {
+		Button("DOCX", []byte(fmt.Sprintf("%s | docx", fileID)), func(ctx context.Context, bot *bot.Bot, mes models.MaybeInaccessibleMessage, data []byte) {
 			processFile(b, ctx, update, data, MimeType)
 		}).
 		Row().
-		Button("PDF", []byte("pdf"), func(ctx context.Context, bot *bot.Bot, mes models.MaybeInaccessibleMessage, data []byte) {
+		Button("RTF", []byte(fmt.Sprintf("%s | rtf", fileID)), func(ctx context.Context, bot *bot.Bot, mes models.MaybeInaccessibleMessage, data []byte) {
+			processFile(b, ctx, update, data, MimeType)
+		}).
+		Button("ODT", []byte(fmt.Sprintf("%s | odt", fileID)), func(ctx context.Context, bot *bot.Bot, mes models.MaybeInaccessibleMessage, data []byte) {
 			processFile(b, ctx, update, data, MimeType)
 		}).
 		Row().
@@ -94,7 +70,7 @@ func ConvertingFiles(file interface{}, b *bot.Bot, ctx context.Context, update *
 		})
 	b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID:      update.Message.Chat.ID,
-		Text:        "Select the Type of File",
+		Text:        "Select the Type of File you want to convert to ",
 		ReplyMarkup: kb,
 	})
 
@@ -105,9 +81,10 @@ func processFile(b *bot.Bot, ctx context.Context, update *models.Update, fileID 
 	theData := string(fileID)
 	parts := strings.Split(theData, "|")
 	fileId := parts[0]
-	NewFileId := strings.TrimSpace(fileId)
 
-	// extension := parts[1]
+	NewFileId := strings.TrimSpace(fileId)
+	fmt.Print("\n File Id : ", fileID)
+
 	file, err := b.GetFile(ctx, &bot.GetFileParams{FileID: NewFileId})
 	if err != nil {
 		log.Printf("Error retrieving file: %v", err)
@@ -149,33 +126,50 @@ func processFile(b *bot.Bot, ctx context.Context, update *models.Update, fileID 
 		ChatID: update.Message.Chat.ID,
 		Text:   fmt.Sprintf("File successfully processed! Saved as %s", localFile),
 	})
+	fmt.Print(" \n TESTETEST \n")
+
 	convertedFile, err := os.Open(outputfile)
+
 	if err != nil {
 		log.Printf("The error happend at opening the FIle in FileConverter %v", err)
 		return
 	}
+	fmt.Print(" \n TESTETEST222 \n")
+
 	defer convertedFile.Close()
 	state, _ := convertedFile.Stat()
 	//Switch Type to check the button Clicked and call the correct Function
 	buffer := bytes.NewBuffer(make([]byte, 0, sizeLimit))
+	fmt.Print(" \n TESTETEST4444 \n")
+	fmt.Print(parts[1])
 
-	switch parts[1] {
-	case "gif":
-		GifFuncConvert(localFile, convertedFile, state.Size(), buffer, b, ctx, update, file.FileUniqueID)
+	switch strings.ToLower(strings.TrimSpace(parts[1])) {
 
 	case "jpeg":
+		GifFuncConvert(localFile, convertedFile, state.Size(), buffer, b, ctx, update, file.FileUniqueID)
 
 	case "bmp":
-
+		b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: update.Message.Chat.ID,
+			Text:   "bmp",
+		})
 	case "tiff":
-
+		b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: update.Message.Chat.ID,
+			Text:   "tiff",
+		})
 	case "doc":
+		fmt.Print(" \n alright the Switch Works here \n")
 
-	case "DOCX":
-
-	case "rtf":
-	case "odt":
-	case "pdf":
+		b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: update.Message.Chat.ID,
+			Text:   "doc ",
+		})
+	case "docx":
+		b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: update.Message.Chat.ID,
+			Text:   "docx",
+		})
 
 	}
 
@@ -229,12 +223,13 @@ func CaptureImageFromAvideo(b *bot.Bot, ctx context.Context, update *models.Upda
 
 	fmt.Printf("Executing: %v\n", cmd.Args)
 
-	output, err := cmd.CombinedOutput()
+	output, err := cmd.Output()
 	if err != nil {
-		fmt.Printf("Error executing ffmpeg command: %v\n", err)
-		fmt.Printf("Output: %s\n", output)
-		return err
+		fmt.Printf("Error in outputing the captureImageFromAvideo : %v\n", err)
+
 	}
+
+	fmt.Printf("Output: %s\n", output)
 
 	return nil
 
