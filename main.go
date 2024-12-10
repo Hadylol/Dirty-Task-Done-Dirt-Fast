@@ -2,6 +2,7 @@ package main
 
 import (
 	bgrem "DirtyTaskDoneDirtFast/Background_Remover"
+	fileconverter "DirtyTaskDoneDirtFast/FileConverter"
 	"context"
 	"fmt"
 	"log"
@@ -35,24 +36,7 @@ type ForTransaction struct {
 	SenderKey  string
 }
 
-func ValidType(filetype string) bool {
-	validTypes := map[string]bool{
-
-		"GIF":  true,
-		"JPEG": true,
-		"PNG":  true,
-		"BMP":  true,
-		"TIFF": true,
-		"DOC":  true,
-		"DOCX": true,
-		"RTF":  true,
-		"ODT":  true,
-		"PDF":  true,
-	}
-	return validTypes[filetype]
-
-}
-
+var userfileType = make(map[int64]string)
 var userState = make(map[int64]string)
 var userInfo = make(map[int64]ForTransaction)
 
@@ -78,28 +62,30 @@ func matchfunc(update *models.Update) bool {
 	return update.Message.Text != "" || len(update.Message.Photo) > 0 || update.Message.Document != nil
 
 }
+
 func Convert(ctx context.Context, b *bot.Bot, update *models.Update) {
+
 	userId := update.Message.From.ID
 	state, exist := userState[userId]
 	if !exist {
-		b.SendMessage(ctx, &bot.SendMessageParams{ChatID: update.Message.Chat.ID, Text: "i wanna be with ur Type Of Filesend me i wanna be with i wanna be with the fileType"})
-		userState[userId] = "WaitingForType"
+		b.SendMessage(ctx, &bot.SendMessageParams{ChatID: update.Message.Chat.ID, Text: "Alright Send ur File here "})
+		userState[userId] = "WaitingForFile"
 
 	}
 	switch state {
-	case "WaitingForType":
-		filetype := string(update.Message.Text)
-
-		if ValidType(filetype) {
-			userState[userId] = "WaitingForFile"
-			b.SendMessage(ctx, &bot.SendMessageParams{ChatID: update.Message.Chat.ID, Text: "Alright the FileType is Valid so send the File what u waiting for"})
-
-		} else {
-			b.SendMessage(ctx, &bot.SendMessageParams{ChatID: update.Message.Chat.ID, Text: "Alright the FileType is not Valid so send the correct  File type dumbass"})
-			delete(userState, userId)
-		}
 
 	case "WaitingForFile":
+		if update.Message.Photo != nil {
+			file := update.Message.Photo
+			fileconverter.ConvertingFiles(file, b, ctx, update, "")
+			delete(userState, userId)
+		}
+		if update.Message.Document != nil {
+			file := update.Message.Document
+			MimeType := file.MimeType
+			fileconverter.ConvertingFiles(file, b, ctx, update, MimeType)
+			delete(userState, userId)
+		}
 
 	}
 }
@@ -137,8 +123,7 @@ func dynamichandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 			Transaction(ctx, b, update)
 		case "CheckingBalance":
 			CheckBalance(ctx, b, update)
-		case "WaitingForType":
-			Convert(ctx, b, update)
+
 		case "WaitingForFile":
 			Convert(ctx, b, update)
 
@@ -306,7 +291,6 @@ func Images(ctx context.Context, b *bot.Bot, update *models.Update) {
 	}
 	switch state {
 	case "waiting_for_Images":
-		fmt.Print(update.Message.From.ID, "\n")
 		if update.Message.Photo != nil {
 			photo := update.Message.Photo[len(update.Message.Photo)-1]
 			go bgrem.ThisfunctiondoesSomething(&photo, ctx, b, update)

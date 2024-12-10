@@ -20,6 +20,7 @@ func ThisfunctiondoesSomething(photo interface{}, ctx context.Context, b *bot.Bo
 	fmt.Println("Reflect Type:", reflect.TypeOf(photo))
 	switch f := photo.(type) {
 	case *models.PhotoSize:
+		print(f.FileID)
 		file, err := b.GetFile(ctx, &bot.GetFileParams{
 			FileID: f.FileID,
 		})
@@ -37,7 +38,7 @@ func ThisfunctiondoesSomething(photo interface{}, ctx context.Context, b *bot.Bo
 			FilePath:     file.FilePath,
 		})
 		localfile := fmt.Sprintf("../urshit%v.png", file.FileUniqueID)
-		if err := downloadimage(fileUrl, localfile); err != nil {
+		if _, err := Downloadimage(fileUrl, localfile); err != nil {
 			b.SendMessage(ctx, &bot.SendMessageParams{ChatID: update.Message.Chat.ID, Text: "makhdmtsh si zabi ma telecharjash 3adna ADSI"})
 
 			return
@@ -101,7 +102,7 @@ func ThisfunctiondoesSomething(photo interface{}, ctx context.Context, b *bot.Bo
 			FilePath:     file.FilePath,
 		})
 		localfile := fmt.Sprintf("urshit%v.png", file.FileUniqueID)
-		if err := downloadimage(fileUrl, localfile); err != nil {
+		if _, err := Downloadimage(fileUrl, localfile); err != nil {
 			b.SendMessage(ctx, &bot.SendMessageParams{ChatID: update.Message.Chat.ID, Text: "makhdmtsh si zabi ma telecharjash 3adna ADSI"})
 
 			return
@@ -142,10 +143,7 @@ func ThisfunctiondoesSomething(photo interface{}, ctx context.Context, b *bot.Bo
 			ChatID:   update.Message.Chat.ID,
 			Document: &models.InputFileUpload{Filename: result, Data: bytes.NewReader(fileContent)},
 		})
-		if err != nil {
-			fmt.Println("Error sending photo:", err)
-			return
-		}
+
 		os.Remove(localfile)
 		os.Remove(result)
 
@@ -154,19 +152,41 @@ func ThisfunctiondoesSomething(photo interface{}, ctx context.Context, b *bot.Bo
 	}
 
 }
-func downloadimage(url, outputpath string) error {
+func Downloadimage(url, outputpath string) (string, error) {
 	resp, err := http.Get(url)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer resp.Body.Close()
+
+	buf := make([]byte, 512)
+	n, err := resp.Body.Read(buf)
+	if err != nil && err != io.EOF {
+		return "", fmt.Errorf("failed to read response body: %v", err)
+	}
+
+	// Detect content type from the buffer
+	contentType := http.DetectContentType(buf[:n])
+	fmt.Printf("Detected content type from buffer: %s \n", contentType)
+
+	// Reset the response body to copy the entire content
+	bodyReader := io.MultiReader(bytes.NewReader(buf[:n]), resp.Body)
+	Testingthis := strings.Split(outputpath, ".")
+	Testingthecontentype := strings.Split(contentType, "/")
+	FileType := Testingthis[1]
+
+	if FileType == "png" {
+		theoutputpath := fmt.Sprintf("%v.%v", Testingthis[0], Testingthecontentype[1])
+		outputpath = theoutputpath
+	}
+
 	out, err := os.Create(outputpath)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer out.Close()
 
-	_, err = io.Copy(out, resp.Body)
-	return err
+	_, err = io.Copy(out, bodyReader)
+	return outputpath, nil
 
 }
