@@ -40,30 +40,6 @@ func ConvertingFiles(file interface{}, b *bot.Bot, ctx context.Context, update *
 		Button("JPEG", []byte(fmt.Sprintf("%s | jpeg", fileID)), func(ctx context.Context, bot *bot.Bot, mes models.MaybeInaccessibleMessage, data []byte) {
 			processFile(b, ctx, update, data, MimeType)
 		}).
-		Button("PDF", []byte(fmt.Sprintf("%s | pdf", fileID)), func(ctx context.Context, bot *bot.Bot, mes models.MaybeInaccessibleMessage, data []byte) {
-			processFile(b, ctx, update, data, MimeType)
-		}).
-		Row().
-		Button("BMP", []byte(fmt.Sprintf("%s | bmp", fileID)), func(ctx context.Context, bot *bot.Bot, mes models.MaybeInaccessibleMessage, data []byte) {
-			processFile(b, ctx, update, data, MimeType)
-		}).
-		Button("TIFF", []byte(fmt.Sprintf("%s | tiff", fileID)), func(ctx context.Context, bot *bot.Bot, mes models.MaybeInaccessibleMessage, data []byte) {
-			processFile(b, ctx, update, data, MimeType)
-		}).
-		Row().
-		Button("DOC", []byte(fmt.Sprintf("%s | doc", fileID)), func(ctx context.Context, bot *bot.Bot, mes models.MaybeInaccessibleMessage, data []byte) {
-			processFile(b, ctx, update, data, MimeType)
-		}).
-		Button("DOCX", []byte(fmt.Sprintf("%s | docx", fileID)), func(ctx context.Context, bot *bot.Bot, mes models.MaybeInaccessibleMessage, data []byte) {
-			processFile(b, ctx, update, data, MimeType)
-		}).
-		Row().
-		Button("RTF", []byte(fmt.Sprintf("%s | rtf", fileID)), func(ctx context.Context, bot *bot.Bot, mes models.MaybeInaccessibleMessage, data []byte) {
-			processFile(b, ctx, update, data, MimeType)
-		}).
-		Button("ODT", []byte(fmt.Sprintf("%s | odt", fileID)), func(ctx context.Context, bot *bot.Bot, mes models.MaybeInaccessibleMessage, data []byte) {
-			processFile(b, ctx, update, data, MimeType)
-		}).
 		Row().
 		Button("Cancel", []byte("cancel"), func(ctx context.Context, b *bot.Bot, mes models.MaybeInaccessibleMessage, data []byte) {
 			b.SendMessage(ctx, &bot.SendMessageParams{ChatID: update.Message.Chat.ID, Text: "Why waste my time man "})
@@ -108,6 +84,7 @@ func processFile(b *bot.Bot, ctx context.Context, update *models.Update, fileID 
 	} else {
 		mimetype := strings.Split(MimeType, "/")
 		thetype := mimetype[1]
+		fmt.Printf("the type is %v", thetype)
 		localfile := fmt.Sprintf("ConvertedFile_%v.%v", file.FileUniqueID, thetype)
 		localFile = localfile
 	}
@@ -126,7 +103,6 @@ func processFile(b *bot.Bot, ctx context.Context, update *models.Update, fileID 
 		ChatID: update.Message.Chat.ID,
 		Text:   fmt.Sprintf("File successfully processed! Saved as %s", localFile),
 	})
-	fmt.Print(" \n TESTETEST \n")
 
 	convertedFile, err := os.Open(outputfile)
 
@@ -134,42 +110,17 @@ func processFile(b *bot.Bot, ctx context.Context, update *models.Update, fileID 
 		log.Printf("The error happend at opening the FIle in FileConverter %v", err)
 		return
 	}
-	fmt.Print(" \n TESTETEST222 \n")
 
 	defer convertedFile.Close()
 	state, _ := convertedFile.Stat()
 	//Switch Type to check the button Clicked and call the correct Function
 	buffer := bytes.NewBuffer(make([]byte, 0, sizeLimit))
-	fmt.Print(" \n TESTETEST4444 \n")
 	fmt.Print(parts[1])
 
 	switch strings.ToLower(strings.TrimSpace(parts[1])) {
 
 	case "jpeg":
 		GifFuncConvert(localFile, convertedFile, state.Size(), buffer, b, ctx, update, file.FileUniqueID)
-
-	case "bmp":
-		b.SendMessage(ctx, &bot.SendMessageParams{
-			ChatID: update.Message.Chat.ID,
-			Text:   "bmp",
-		})
-	case "tiff":
-		b.SendMessage(ctx, &bot.SendMessageParams{
-			ChatID: update.Message.Chat.ID,
-			Text:   "tiff",
-		})
-	case "doc":
-		fmt.Print(" \n alright the Switch Works here \n")
-
-		b.SendMessage(ctx, &bot.SendMessageParams{
-			ChatID: update.Message.Chat.ID,
-			Text:   "doc ",
-		})
-	case "docx":
-		b.SendMessage(ctx, &bot.SendMessageParams{
-			ChatID: update.Message.Chat.ID,
-			Text:   "docx",
-		})
 
 	}
 

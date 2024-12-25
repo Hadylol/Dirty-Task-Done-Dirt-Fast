@@ -2,6 +2,7 @@ package main
 
 import (
 	bgrem "DirtyTaskDoneDirtFast/Background_Remover"
+	Docx "DirtyTaskDoneDirtFast/Docconverter"
 	fileconverter "DirtyTaskDoneDirtFast/FileConverter"
 	"context"
 	"fmt"
@@ -28,7 +29,8 @@ var commandHandlers = map[string]func(ctx context.Context, b *bot.Bot, update *m
 	"/checkbalance":            CheckBalance,
 	"/imagebg":                 Images,
 	"if you don't talk to her": talktuah,
-	"/Convert":                 Convert,
+	"/convert":                 Convert,
+	"/convertpdf":              DocxConverter,
 }
 
 type ForTransaction struct {
@@ -106,6 +108,7 @@ func Wswoata3mok(ctx context.Context, b *bot.Bot, update *models.Update) {
 	})
 
 }
+
 func dynamichandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	userId := update.Message.From.ID
 
@@ -126,6 +129,8 @@ func dynamichandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 		case "WaitingForFile":
 			Convert(ctx, b, update)
+		case "waiting_for_doc":
+			DocxConverter(ctx, b, update)
 
 		}
 
@@ -141,6 +146,43 @@ func dynamichandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 }
 func defaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	fmt.Print("buying poor socks i'll create jobs tearing down ur mom ")
+
+}
+func DocxConverter(ctx context.Context, b *bot.Bot, update *models.Update) {
+	userId := update.Message.From.ID
+	state, exist := userState[userId]
+	if !exist {
+		userState[userId] = "waiting_for_doc"
+		b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: update.Message.Chat.ID,
+			Text:   "Please Provide the Docx",
+		})
+	}
+	switch state {
+	case "waiting_for_doc":
+		if update.Message.Document != nil {
+			// Check if the document is a .docx file
+			if update.Message.Document.MimeType == "application/vnd.openxmlformats-officedocument.wordprocessingml.document" {
+				// Proceed with document conversion
+				Docx.ConvertingDocToPDF(update.Message.Document, ctx, b, update)
+
+			} else {
+				// If the document is not a .docx, inform the user
+				b.SendMessage(ctx, &bot.SendMessageParams{
+					ChatID: update.Message.Chat.ID,
+					Text:   "Please send a .docx file.",
+				})
+			}
+			delete(userState, userId)
+		} else {
+			// If no document is sent, inform the user
+			b.SendMessage(ctx, &bot.SendMessageParams{
+				ChatID: update.Message.Chat.ID,
+				Text:   "Please send a .docx file.",
+			})
+			delete(userState, userId)
+		}
+	}
 
 }
 func CheckBalance(ctx context.Context, b *bot.Bot, update *models.Update) {
